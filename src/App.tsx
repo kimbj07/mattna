@@ -27,7 +27,7 @@ function App() {
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            맞나 - 이 별점, 맞나?
+            맛맞나 - 이 맛집, 맛 맞나?
           </h1>
           <div className="relative">
             <input
