@@ -72,13 +72,17 @@ mattna/
 │   ├─ data/
 │   │   └─ mockRestaurants.ts      # Mock 데이터 (5개 샘플)
 │   │
+│   ├─ utils/
+│   │   └─ kakao.ts                # Kakao SDK 유틸리티 (init, login, logout)
+│   │
 │   ├─ types.ts                    # TypeScript 타입 정의
 │   ├─ App.tsx                     # 메인 앱 컴포넌트
 │   ├─ main.tsx                    # 진입점
 │   └─ index.css                   # Tailwind CSS
 │
 ├─ public/                         # 정적 파일
-├─ index.html                      # HTML 템플릿
+├─ .env.local                      # 환경 변수 (git-ignored)
+├─ index.html                      # HTML 템플릿 (Kakao SDK 로드)
 ├─ package.json                    # 의존성 관리
 ├─ vite.config.ts                  # Vite 설정
 ├─ tailwind.config.js              # Tailwind 설정
@@ -115,11 +119,22 @@ mattna/
   - 숨은 맛집 예시 (갭 점수 +1.2)
   - 평범한 예시 (갭 점수 0.1)
 
+**5. Kakao Login** ✅ (2025-12-16)
+- Kakao JavaScript SDK 통합
+- 로그인/로그아웃 기능 구현
+- 사용자 프로필 표시 (닉네임, 프로필 이미지)
+- 환경 변수 설정 완료 (.env.local, .bash_profile)
+
 ### ⏳ 미구현 (다음 단계)
 
 **Phase 1: 인증 & 지도 기반 UX** (🔥 최우선)
-- [ ] Kakao 로그인 구현 (OAuth 2.0)
-- [ ] Kakao Map 통합 (지도 위 음식점 표시)
+- [x] **Kakao 로그인 구현** ✅ (2025-12-16 완료)
+  - `src/utils/kakao.ts`: SDK 초기화, 로그인, 로그아웃, 사용자 정보 조회
+  - `src/App.tsx`: 로그인 UI 통합 (헤더 우측에 버튼 추가)
+  - `index.html`: Kakao Login SDK 스크립트 로드
+  - `.env.local`: API 키 설정 완료
+  - `.bash_profile`: 환경 변수 추가 완료
+- [ ] Kakao Map 통합 (지도 위 음식점 표시) ← **다음 작업**
 - [ ] Kakao Local API 연동 (음식점 검색/정보)
 - [ ] 사용자 DB 스키마 설계
 
@@ -541,11 +556,16 @@ CREATE OR REFRESH MATERIALIZED VIEW restaurant_gap_stats;
 ### 환경 변수 설정
 
 ```bash
-# .env.local (프론트엔드)
-VITE_KAKAO_JAVASCRIPT_KEY=your_kakao_js_key
+# .env.local (프론트엔드) ✅ 설정 완료
+VITE_KAKAO_JAVASCRIPT_KEY=156164f7c126d4a9c8a7208134223fca
+VITE_KAKAO_REST_API_KEY=3baf743db8036316d74315846a41676e
 VITE_KAKAO_LOGIN_REDIRECT_URI=http://localhost:3000/auth/kakao/callback
+VITE_GOOGLE_PLACES_API_KEY=AIzaSyAwNn95ySMZa-KsGUzM9WLZIcBFpR4lRts
 
-# .env (백엔드)
+# .bash_profile ✅ 추가 완료
+# (위 환경 변수들이 .bash_profile에도 export로 추가됨)
+
+# .env (백엔드) ⏳ 향후 추가 예정
 KAKAO_REST_API_KEY=your_kakao_rest_key
 KAKAO_ADMIN_KEY=your_kakao_admin_key
 NAVER_CLIENT_ID=your_naver_client_id
@@ -554,33 +574,45 @@ GOOGLE_PLACES_API_KEY=your_google_api_key
 DATABASE_URL=your_postgres_connection_string
 ```
 
+**중요**:
+- `.env.local`은 `.gitignore`에 포함되어 GitHub에 푸시되지 않음
+- `.bash_profile`의 환경 변수는 터미널 세션에서 전역으로 사용 가능
+
 ### 다음 단계 추천 순서
 
-1. **Kakao Login 구현** (1-2시간)
-   - JavaScript SDK 통합
-   - 로그인 버튼 + 콜백 처리
-   - 사용자 정보 저장
+1. ~~**Kakao Login 구현**~~ ✅ **완료** (2025-12-16)
+   - ✅ JavaScript SDK 통합
+   - ✅ 로그인 버튼 + 콜백 처리
+   - ✅ 사용자 정보 저장
 
-2. **Kakao Map 통합** (2-3시간)
-   - 지도 컴포넌트 생성
+2. **Kakao Map 통합** (2-3시간) 🔥 **← 다음 작업**
+   - 지도 컴포넌트 생성 (`src/components/MapView.tsx`)
    - 현재 위치 기반 표시
    - 음식점 마커 표시
+   - 지도 클릭 시 음식점 정보 팝업
 
 3. **Kakao Local API** (2-3시간)
    - 주변 음식점 검색
    - 음식점 상세 정보 표시
+   - Mock 데이터를 실제 API 데이터로 교체
 
 4. **백엔드 API 서버** (1일)
    - Express.js or FastAPI 선택
    - 기본 CRUD API
    - Supabase 연동
 
-5. **Google/Naver 통합** (1일)
+5. **Google Places API 통합** (1일)
    - 평점 수집 로직
-   - 통합 표시 UI
+   - Kakao + Google 통합 표시 UI
 
 ---
 
-**마지막 업데이트**: 2025-12-16
-**버전**: v0.0.2 (Backend Planning)
+**마지막 업데이트**: 2025-12-16 18:47 KST
+**버전**: v0.0.3 (Kakao Login 완료)
 **작성자**: SK-Jack with tigger.kim
+
+**최근 변경사항** (v0.0.3):
+- ✅ Kakao Login 통합 완료 (SDK, UI, 환경변수)
+- ✅ 사용자 프로필 표시 (닉네임, 프로필 이미지)
+- ✅ 로그인/로그아웃 기능 구현
+- 🔥 **다음**: Kakao Map 통합 (지도 UI + 음식점 마커)

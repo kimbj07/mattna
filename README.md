@@ -55,13 +55,14 @@ VITE_KAKAO_LOGIN_REDIRECT_URI=http://localhost:3000/auth/kakao/callback
 
 ## 프로젝트 상태
 
-**현재 버전**: v0.0.2 (Backend Planning)
+**현재 버전**: v0.0.3 (Kakao Login 완료)
 
 - ✅ 프론트엔드 프로토타입 (React + TypeScript)
 - ✅ 5단계 감성 평가 UI
 - ✅ Mock 데이터 기반 갭 점수 시각화
-- 🔄 Kakao API 통합 (진행 중)
-- 🔄 백엔드 API 서버 설계 (진행 중)
+- ✅ Kakao Login 통합 (로그인, 로그아웃, 프로필 표시)
+- 🔥 Kakao Map 통합 (다음 작업)
+- 🔄 백엔드 API 서버 설계 (계획 중)
 
 ## 도메인
 
