@@ -43,12 +43,19 @@ Frontend:
   - TypeScript 5.7.2
   - Vite 6.0.3 (개발 서버)
   - Tailwind CSS 3.4.17 (스타일링)
+  - Kakao Map JavaScript SDK (지도)
+  - Kakao Login JavaScript SDK (인증)
 
-Backend (향후):
-  - TBD (Firebase / Supabase / FastAPI 고려)
+Backend:
+  - Node.js + Express.js or FastAPI (API 서버)
+  - PostgreSQL or Supabase (데이터베이스)
+  - Kakao Local API (음식점 검색)
+  - Google Places API (구글 평점)
+  - Naver Search API (네이버 정보, 제한적)
 
 배포:
-  - Vercel (무료 호스팅)
+  - Vercel (프론트엔드)
+  - Railway or Fly.io (백엔드)
 ```
 
 ## 프로젝트 구조
@@ -110,28 +117,35 @@ mattna/
 
 ### ⏳ 미구현 (다음 단계)
 
-**Phase 1: 실제 데이터 연동**
-- [ ] 네이버/카카오 맛집 API 연동
-- [ ] 백엔드 구축 (사용자 평가 저장)
+**Phase 1: 인증 & 지도 기반 UX** (🔥 최우선)
+- [ ] Kakao 로그인 구현 (OAuth 2.0)
+- [ ] Kakao Map 통합 (지도 위 음식점 표시)
+- [ ] Kakao Local API 연동 (음식점 검색/정보)
+- [ ] 사용자 DB 스키마 설계
+
+**Phase 2: 멀티플랫폼 평점 통합**
+- [ ] Kakao Place 평점 수집
+- [ ] 네이버 검색 API 연동 (평점)
+- [ ] Google Places API 연동 (평점)
+- [ ] 평점 통합 표시 UI
+
+**Phase 3: 백엔드 구축**
+- [ ] API 서버 구축 (Express or FastAPI)
+- [ ] 데이터베이스 설계 (PostgreSQL/Supabase)
+- [ ] 사용자 평가 저장 API
 - [ ] 갭 점수 실시간 계산 로직
 
-**Phase 2: 사용자 기능**
-- [ ] 사용자 인증 (소셜 로그인)
-- [ ] GPS 기반 주변 맛집
+**Phase 4: 사용자 기능**
+- [ ] GPS 기반 주변 맛집 필터
 - [ ] 맛집 북마크
 - [ ] 내 평가 히스토리
-
-**Phase 3: 고급 기능**
 - [ ] 친구 평가 비교
-- [ ] 음식 카테고리별 필터
-- [ ] 지역별 과대평가 TOP 10
-- [ ] 숨은 맛집 랭킹
 
-**Phase 4: 배포 & 마케팅**
-- [ ] Vercel 배포
+**Phase 5: 배포 & 마케팅**
+- [ ] Vercel 배포 (프론트엔드)
+- [ ] Railway 배포 (백엔드)
 - [ ] 랜딩 페이지 제작
 - [ ] 베타 테스터 모집 (10-50명)
-- [ ] 피드백 수집 및 개선
 
 ## 개발 가이드
 
@@ -287,6 +301,283 @@ git push origin main
 
 ---
 
+## API 통합 가이드
+
+### Kakao API 통합
+
+#### 1. Kakao Developers 앱 등록
+```
+1. https://developers.kakao.com 접속
+2. 내 애플리케이션 > 애플리케이션 추가하기
+3. 앱 이름: "맞나"
+4. 앱 키 발급:
+   - REST API 키
+   - JavaScript 키
+   - Admin 키
+```
+
+#### 2. Kakao Login 설정
+```javascript
+// 플랫폼 설정
+- Web 플랫폼 등록
+  - 사이트 도메인: http://localhost:3000, https://mattna.vercel.app
+
+// Redirect URI 설정
+- http://localhost:3000/auth/kakao/callback
+- https://mattna.vercel.app/auth/kakao/callback
+
+// 동의항목 설정
+- 필수: 닉네임, 프로필 이미지
+- 선택: 이메일 (선택적)
+```
+
+#### 3. Kakao Map JavaScript SDK
+```html
+<!-- index.html에 추가 -->
+<script type="text/javascript"
+  src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_JAVASCRIPT_KEY&libraries=services"></script>
+```
+
+```typescript
+// src/utils/kakaoMap.ts
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
+
+export const initMap = (container: HTMLElement, center: { lat: number; lng: number }) => {
+  const options = {
+    center: new window.kakao.maps.LatLng(center.lat, center.lng),
+    level: 3
+  };
+  return new window.kakao.maps.Map(container, options);
+};
+```
+
+#### 4. Kakao Local API (음식점 검색)
+```typescript
+// Backend API call
+const searchPlaces = async (keyword: string, x: string, y: string) => {
+  const response = await fetch(
+    `https://dapi.kakao.com/v2/local/search/keyword.json?` +
+    `query=${encodeURIComponent(keyword)}&x=${x}&y=${y}&radius=1000&category_group_code=FD6`,
+    {
+      headers: {
+        'Authorization': `KakaoAK ${process.env.KAKAO_REST_API_KEY}`
+      }
+    }
+  );
+  return await response.json();
+};
+```
+
+### Google Places API 통합
+
+#### 1. Google Cloud Console 설정
+```
+1. https://console.cloud.google.com
+2. 새 프로젝트 생성: "Mattna"
+3. API 및 서비스 > 라이브러리
+4. "Places API" 검색 후 사용 설정
+5. 사용자 인증 정보 > API 키 생성
+6. API 키 제한 설정:
+   - 애플리케이션 제한사항: HTTP 리퍼러
+   - 허용된 리퍼러: localhost:3000, mattna.vercel.app
+   - API 제한사항: Places API만 허용
+```
+
+#### 2. Places API 사용 (백엔드)
+```typescript
+// Backend: Google Places API call
+import { Client } from "@googlemaps/google-maps-services-js";
+
+const client = new Client({});
+
+const getPlaceDetails = async (placeId: string) => {
+  const response = await client.placeDetails({
+    params: {
+      place_id: placeId,
+      fields: ['name', 'rating', 'user_ratings_total', 'formatted_address'],
+      key: process.env.GOOGLE_PLACES_API_KEY!
+    }
+  });
+  return response.data.result;
+};
+```
+
+**무료 한도**:
+- 월 $200 크레딧 (약 28,500 Place Details 요청)
+- Place Search: 요청당 $0.032
+- Place Details: 요청당 $0.017
+
+### Naver Search API 통합
+
+#### 1. Naver Developers 앱 등록
+```
+1. https://developers.naver.com/apps/#/register
+2. 애플리케이션 이름: "맞나"
+3. 사용 API: 검색 (지역)
+4. Client ID, Client Secret 발급
+```
+
+#### 2. Naver Local Search API
+```typescript
+// Backend: Naver Search API call
+const searchNaverPlaces = async (query: string) => {
+  const response = await fetch(
+    `https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(query)}&display=5`,
+    {
+      headers: {
+        'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID!,
+        'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET!
+      }
+    }
+  );
+  return await response.json();
+};
+```
+
+**제한사항**:
+- 하루 25,000 요청
+- 평점 정보는 제공되지 않음 (검색 결과만)
+- 크롤링 대안 고려 필요
+
+### 멀티플랫폼 평점 통합 전략
+
+```typescript
+// src/services/ratingAggregator.ts
+interface PlaceRatings {
+  kakao: { rating: number; reviewCount: number } | null;
+  naver: { rating: number; reviewCount: number } | null;
+  google: { rating: number; reviewCount: number } | null;
+}
+
+export const aggregateRatings = async (
+  placeName: string,
+  lat: number,
+  lng: number
+): Promise<PlaceRatings> => {
+  // 병렬로 모든 플랫폼 API 호출
+  const [kakaoData, naverData, googleData] = await Promise.allSettled([
+    fetchKakaoRating(placeName, lat, lng),
+    fetchNaverRating(placeName),
+    fetchGoogleRating(placeName, lat, lng)
+  ]);
+
+  return {
+    kakao: kakaoData.status === 'fulfilled' ? kakaoData.value : null,
+    naver: naverData.status === 'fulfilled' ? naverData.value : null,
+    google: googleData.status === 'fulfilled' ? googleData.value : null
+  };
+};
+```
+
+### 데이터베이스 스키마 (Supabase/PostgreSQL)
+
+```sql
+-- 사용자 테이블
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  kakao_id VARCHAR(255) UNIQUE NOT NULL,
+  nickname VARCHAR(100),
+  profile_image_url TEXT,
+  email VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 음식점 테이블
+CREATE TABLE restaurants (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  kakao_place_id VARCHAR(255),
+  google_place_id VARCHAR(255),
+  naver_place_id VARCHAR(255),
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(100),
+  address TEXT,
+  lat DECIMAL(10, 8),
+  lng DECIMAL(11, 8),
+  kakao_rating DECIMAL(2, 1),
+  naver_rating DECIMAL(2, 1),
+  google_rating DECIMAL(2, 1),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 사용자 평가 테이블
+CREATE TABLE reviews (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id),
+  restaurant_id UUID REFERENCES restaurants(id),
+  reference_rating DECIMAL(2, 1),  -- 평가 시점의 별점
+  reference_source VARCHAR(20),     -- 'kakao', 'naver', 'google'
+  satisfaction_gap INTEGER CHECK (satisfaction_gap >= -2 AND satisfaction_gap <= 2),
+  gap_label VARCHAR(50),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 갭 점수 통계 (materialized view)
+CREATE MATERIALIZED VIEW restaurant_gap_stats AS
+SELECT
+  restaurant_id,
+  AVG(satisfaction_gap) as avg_gap_score,
+  COUNT(*) as review_count,
+  COUNT(CASE WHEN satisfaction_gap = -2 THEN 1 END) as very_disappointed,
+  COUNT(CASE WHEN satisfaction_gap = -1 THEN 1 END) as disappointed,
+  COUNT(CASE WHEN satisfaction_gap = 0 THEN 1 END) as as_expected,
+  COUNT(CASE WHEN satisfaction_gap = 1 THEN 1 END) as better,
+  COUNT(CASE WHEN satisfaction_gap = 2 THEN 1 END) as amazing
+FROM reviews
+GROUP BY restaurant_id;
+
+-- 갭 점수 통계 자동 업데이트
+CREATE OR REFRESH MATERIALIZED VIEW restaurant_gap_stats;
+```
+
+### 환경 변수 설정
+
+```bash
+# .env.local (프론트엔드)
+VITE_KAKAO_JAVASCRIPT_KEY=your_kakao_js_key
+VITE_KAKAO_LOGIN_REDIRECT_URI=http://localhost:3000/auth/kakao/callback
+
+# .env (백엔드)
+KAKAO_REST_API_KEY=your_kakao_rest_key
+KAKAO_ADMIN_KEY=your_kakao_admin_key
+NAVER_CLIENT_ID=your_naver_client_id
+NAVER_CLIENT_SECRET=your_naver_client_secret
+GOOGLE_PLACES_API_KEY=your_google_api_key
+DATABASE_URL=your_postgres_connection_string
+```
+
+### 다음 단계 추천 순서
+
+1. **Kakao Login 구현** (1-2시간)
+   - JavaScript SDK 통합
+   - 로그인 버튼 + 콜백 처리
+   - 사용자 정보 저장
+
+2. **Kakao Map 통합** (2-3시간)
+   - 지도 컴포넌트 생성
+   - 현재 위치 기반 표시
+   - 음식점 마커 표시
+
+3. **Kakao Local API** (2-3시간)
+   - 주변 음식점 검색
+   - 음식점 상세 정보 표시
+
+4. **백엔드 API 서버** (1일)
+   - Express.js or FastAPI 선택
+   - 기본 CRUD API
+   - Supabase 연동
+
+5. **Google/Naver 통합** (1일)
+   - 평점 수집 로직
+   - 통합 표시 UI
+
+---
+
 **마지막 업데이트**: 2025-12-16
-**버전**: v0.0.1 (MVP Prototype)
+**버전**: v0.0.2 (Backend Planning)
 **작성자**: SK-Jack with tigger.kim
