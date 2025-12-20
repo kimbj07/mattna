@@ -47,43 +47,56 @@ Frontend:
   - Kakao Login JavaScript SDK (인증)
 
 Backend:
-  - Node.js + Express.js or FastAPI (API 서버)
-  - PostgreSQL or Supabase (데이터베이스)
+  - Kotlin + Spring Boot 4.x (API 서버, Spring Framework 7 기반)
+  - MySQL 8.x (데이터베이스)
   - Kakao Local API (음식점 검색)
   - Google Places API (구글 평점)
   - Naver Search API (네이버 정보, 제한적)
 
 배포:
   - Vercel (프론트엔드)
-  - Railway or Fly.io (백엔드)
+  - AWS EC2 or Railway (백엔드)
 ```
 
 ## 프로젝트 구조
 
 ```
-mattna/
-├─ src/
+matmatna/
+├─ src/                            # 프론트엔드 (React + TypeScript)
 │   ├─ components/
 │   │   └─ RestaurantCard.tsx      # 음식점 카드 컴포넌트
-│   │
 │   ├─ pages/
 │   │   └─ RatingPage.tsx          # 평가 화면 (핵심 UI)
-│   │
 │   ├─ data/
 │   │   └─ mockRestaurants.ts      # Mock 데이터 (5개 샘플)
-│   │
 │   ├─ utils/
-│   │   └─ kakao.ts                # Kakao SDK 유틸리티 (init, login, logout)
-│   │
+│   │   └─ kakao.ts                # Kakao SDK 유틸리티
 │   ├─ types.ts                    # TypeScript 타입 정의
 │   ├─ App.tsx                     # 메인 앱 컴포넌트
 │   ├─ main.tsx                    # 진입점
 │   └─ index.css                   # Tailwind CSS
 │
+├─ backend/                        # 백엔드 (Kotlin + Spring Boot 4.x)
+│   ├─ src/main/kotlin/kr/matmatna/
+│   │   ├─ MatmatnaApplication.kt  # Spring Boot 애플리케이션 진입점
+│   │   ├─ domain/
+│   │   │   ├─ user/               # User 엔티티 & Repository
+│   │   │   ├─ restaurant/         # Restaurant 엔티티 & Repository
+│   │   │   └─ review/             # Review 엔티티 & Repository
+│   │   ├─ api/                    # REST API Controllers
+│   │   │   ├─ UserController.kt
+│   │   │   ├─ RestaurantController.kt
+│   │   │   └─ ReviewController.kt
+│   │   └─ config/                 # 설정 클래스
+│   ├─ src/main/resources/
+│   │   └─ application.yml         # Spring 설정
+│   ├─ build.gradle.kts            # Gradle 빌드 스크립트
+│   └─ gradlew                     # Gradle Wrapper
+│
 ├─ public/                         # 정적 파일
 ├─ .env.local                      # 환경 변수 (git-ignored)
 ├─ index.html                      # HTML 템플릿 (Kakao SDK 로드)
-├─ package.json                    # 의존성 관리
+├─ package.json                    # 프론트엔드 의존성 관리
 ├─ vite.config.ts                  # Vite 설정
 ├─ tailwind.config.js              # Tailwind 설정
 ├─ tsconfig.json                   # TypeScript 설정
@@ -144,11 +157,11 @@ mattna/
 - [ ] Google Places API 연동 (평점)
 - [ ] 평점 통합 표시 UI
 
-**Phase 3: 백엔드 구축**
-- [ ] API 서버 구축 (Express or FastAPI)
-- [ ] 데이터베이스 설계 (PostgreSQL/Supabase)
-- [ ] 사용자 평가 저장 API
-- [ ] 갭 점수 실시간 계산 로직
+**Phase 3: 백엔드 구축** ✅ (2025-12-20 완료)
+- [x] API 서버 구축 (Kotlin + Spring Boot 4.0.1)
+- [x] 데이터베이스 설계 (MySQL 8.x - JPA 엔티티)
+- [x] 사용자 평가 저장 API
+- [x] 갭 점수 실시간 계산 로직
 
 **Phase 4: 사용자 기능**
 - [ ] GPS 기반 주변 맛집 필터
@@ -164,25 +177,60 @@ mattna/
 
 ## 개발 가이드
 
-### 로컬 실행
+### 프론트엔드 로컬 실행
 
 ```bash
 # 프로젝트 디렉토리로 이동
-cd /Users/tigger.kim/workspace/mattna
+cd /Users/tigger/workspace/matmatna
 
 # 의존성 설치 (최초 1회)
 npm install
 
 # 개발 서버 실행
 npm run dev
-# → http://localhost:3000 자동 오픈
+# → http://localhost:5173 자동 오픈
 
 # 빌드 (배포용)
 npm run build
-
-# 빌드 결과 미리보기
-npm run preview
 ```
+
+### 백엔드 로컬 실행
+
+```bash
+# 백엔드 디렉토리로 이동
+cd /Users/tigger/workspace/matmatna/backend
+
+# MySQL 데이터베이스 생성 (최초 1회)
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS matmatna CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 환경 변수 설정 (또는 application.yml 수정)
+export MYSQL_USERNAME=root
+export MYSQL_PASSWORD=your_password
+
+# 빌드 & 실행
+./gradlew bootRun
+# → http://localhost:8080 에서 API 서버 실행
+
+# 빌드만
+./gradlew build
+
+# JAR 파일로 실행
+java -jar build/libs/matmatna-backend-0.0.1-SNAPSHOT.jar
+```
+
+### API 엔드포인트
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/users/kakao` | 카카오 로그인/회원가입 |
+| GET | `/api/users/{id}` | 사용자 정보 조회 |
+| GET | `/api/restaurants` | 음식점 목록 |
+| GET | `/api/restaurants/{id}` | 음식점 상세 + 갭 점수 |
+| GET | `/api/restaurants/search?query=` | 음식점 검색 |
+| GET | `/api/restaurants/nearby?lat=&lng=` | 주변 음식점 |
+| POST | `/api/reviews` | 평가 등록 |
+| GET | `/api/reviews/restaurant/{id}` | 음식점별 리뷰 |
+| GET | `/api/reviews/restaurant/{id}/stats` | 갭 점수 통계 |
 
 ### Git 작업
 
@@ -249,21 +297,29 @@ git push origin main
 
 1. **프로젝트 디렉토리 확인**
    ```bash
-   cd /Users/tigger.kim/workspace/mattna
+   cd /Users/tigger/workspace/matmatna
    ls -la
+   ls -la backend/  # 백엔드 디렉토리 확인
    ```
 
-2. **개발 서버 실행 여부 확인**
+2. **프론트엔드 개발 서버**
    ```bash
-   lsof -i :3000  # 이미 실행 중인지 확인
-   npm run dev    # 실행 안 되어 있으면 시작
+   lsof -i :5173  # Vite 포트 확인
+   npm run dev    # 프론트엔드 시작
    ```
 
-3. **이 파일(CLAUDE.md) 읽기**
+3. **백엔드 개발 서버**
+   ```bash
+   cd backend
+   lsof -i :8080  # Spring Boot 포트 확인
+   ./gradlew bootRun  # 백엔드 시작 (H2 In-Memory DB)
+   ```
+
+4. **이 파일(CLAUDE.md) 읽기**
    - 현재 구현 상태 파악
    - 다음 작업 선택
 
-4. **Git 상태 확인**
+5. **Git 상태 확인**
    ```bash
    git status
    git log --oneline -5  # 최근 커밋 확인
@@ -271,19 +327,21 @@ git push origin main
 
 ## 작업 우선순위 (추천)
 
-### 🔥 High Priority (빠른 검증)
-1. **Vercel 배포** (30분)
-   - 실제 URL로 모바일 테스트 가능
-   - 베타 테스터에게 공유 가능
+### 🔥 High Priority (다음 작업)
+1. **프론트엔드 ↔ 백엔드 연동**
+   - React에서 Spring Boot API 호출
+   - Mock 데이터 → 실제 API 전환
 
-2. **네이버/카카오 API 연동** (2-3시간)
-   - Mock 데이터 → 실제 맛집 데이터
-   - 검색 기능 실용화
+2. **Kakao Map 통합**
+   - 지도 컴포넌트 생성
+   - 음식점 마커 표시
 
-3. **백엔드 구축** (1일)
-   - Firebase or Supabase
-   - 사용자 평가 저장
-   - 갭 점수 실시간 계산
+3. **Vercel + Railway 배포**
+   - 프론트: Vercel
+   - 백엔드: Railway (MySQL 포함)
+
+### ✅ Completed (2025-12-20)
+- ~~백엔드 구축~~ → Kotlin + Spring Boot 4.0.1 + H2/MySQL
 
 ### 📊 Medium Priority (기능 확장)
 4. **GPS 기반 주변 맛집** (1일)
@@ -491,23 +549,23 @@ export const aggregateRatings = async (
 };
 ```
 
-### 데이터베이스 스키마 (Supabase/PostgreSQL)
+### 데이터베이스 스키마 (MySQL 8.x)
 
 ```sql
 -- 사용자 테이블
 CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
   kakao_id VARCHAR(255) UNIQUE NOT NULL,
   nickname VARCHAR(100),
   profile_image_url TEXT,
   email VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- 음식점 테이블
 CREATE TABLE restaurants (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
   kakao_place_id VARCHAR(255),
   google_place_id VARCHAR(255),
   naver_place_id VARCHAR(255),
@@ -519,59 +577,75 @@ CREATE TABLE restaurants (
   kakao_rating DECIMAL(2, 1),
   naver_rating DECIMAL(2, 1),
   google_rating DECIMAL(2, 1),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_kakao_place_id (kakao_place_id),
+  INDEX idx_location (lat, lng)
 );
 
 -- 사용자 평가 테이블
 CREATE TABLE reviews (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id),
-  restaurant_id UUID REFERENCES restaurants(id),
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  restaurant_id BIGINT NOT NULL,
   reference_rating DECIMAL(2, 1),  -- 평가 시점의 별점
   reference_source VARCHAR(20),     -- 'kakao', 'naver', 'google'
-  satisfaction_gap INTEGER CHECK (satisfaction_gap >= -2 AND satisfaction_gap <= 2),
+  satisfaction_gap TINYINT CHECK (satisfaction_gap >= -2 AND satisfaction_gap <= 2),
   gap_label VARCHAR(50),
-  created_at TIMESTAMP DEFAULT NOW()
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id),
+  INDEX idx_restaurant_id (restaurant_id),
+  INDEX idx_user_id (user_id)
 );
 
--- 갭 점수 통계 (materialized view)
-CREATE MATERIALIZED VIEW restaurant_gap_stats AS
+-- 갭 점수 통계 뷰
+CREATE VIEW restaurant_gap_stats AS
 SELECT
   restaurant_id,
   AVG(satisfaction_gap) as avg_gap_score,
   COUNT(*) as review_count,
-  COUNT(CASE WHEN satisfaction_gap = -2 THEN 1 END) as very_disappointed,
-  COUNT(CASE WHEN satisfaction_gap = -1 THEN 1 END) as disappointed,
-  COUNT(CASE WHEN satisfaction_gap = 0 THEN 1 END) as as_expected,
-  COUNT(CASE WHEN satisfaction_gap = 1 THEN 1 END) as better,
-  COUNT(CASE WHEN satisfaction_gap = 2 THEN 1 END) as amazing
+  SUM(CASE WHEN satisfaction_gap = -2 THEN 1 ELSE 0 END) as very_disappointed,
+  SUM(CASE WHEN satisfaction_gap = -1 THEN 1 ELSE 0 END) as disappointed,
+  SUM(CASE WHEN satisfaction_gap = 0 THEN 1 ELSE 0 END) as as_expected,
+  SUM(CASE WHEN satisfaction_gap = 1 THEN 1 ELSE 0 END) as better,
+  SUM(CASE WHEN satisfaction_gap = 2 THEN 1 ELSE 0 END) as amazing
 FROM reviews
 GROUP BY restaurant_id;
-
--- 갭 점수 통계 자동 업데이트
-CREATE OR REFRESH MATERIALIZED VIEW restaurant_gap_stats;
 ```
 
 ### 환경 변수 설정
 
 ```bash
 # .env.local (프론트엔드) ✅ 설정 완료
-VITE_KAKAO_JAVASCRIPT_KEY=156164f7c126d4a9c8a7208134223fca
-VITE_KAKAO_REST_API_KEY=3baf743db8036316d74315846a41676e
+# ⚠️ 실제 키는 .env.local 파일에 저장 (git-ignored)
+VITE_KAKAO_JAVASCRIPT_KEY=your_kakao_javascript_key
+VITE_KAKAO_REST_API_KEY=your_kakao_rest_api_key
 VITE_KAKAO_LOGIN_REDIRECT_URI=http://localhost:3000/auth/kakao/callback
-VITE_GOOGLE_PLACES_API_KEY=AIzaSyAwNn95ySMZa-KsGUzM9WLZIcBFpR4lRts
+VITE_GOOGLE_PLACES_API_KEY=your_google_places_api_key
 
 # .bash_profile ✅ 추가 완료
 # (위 환경 변수들이 .bash_profile에도 export로 추가됨)
 
-# .env (백엔드) ⏳ 향후 추가 예정
+# application.yml (백엔드 - Spring Boot) ⏳ 향후 추가 예정
+# spring:
+#   datasource:
+#     url: jdbc:mysql://localhost:3306/matmatna?useSSL=false&serverTimezone=Asia/Seoul
+#     username: your_mysql_username
+#     password: your_mysql_password
+#   jpa:
+#     hibernate:
+#       ddl-auto: validate
+#     properties:
+#       hibernate:
+#         dialect: org.hibernate.dialect.MySQLDialect
+
+# External API Keys (환경변수 또는 application-secret.yml)
 KAKAO_REST_API_KEY=your_kakao_rest_key
 KAKAO_ADMIN_KEY=your_kakao_admin_key
 NAVER_CLIENT_ID=your_naver_client_id
 NAVER_CLIENT_SECRET=your_naver_client_secret
 GOOGLE_PLACES_API_KEY=your_google_api_key
-DATABASE_URL=your_postgres_connection_string
 ```
 
 **중요**:
@@ -597,9 +671,9 @@ DATABASE_URL=your_postgres_connection_string
    - Mock 데이터를 실제 API 데이터로 교체
 
 4. **백엔드 API 서버** (1일)
-   - Express.js or FastAPI 선택
-   - 기본 CRUD API
-   - Supabase 연동
+   - Kotlin + Spring Boot 4.x (Spring Framework 7)
+   - 기본 CRUD API (JPA + Spring Data)
+   - MySQL 8.x 연동
 
 5. **Google Places API 통합** (1일)
    - 평점 수집 로직
@@ -607,12 +681,24 @@ DATABASE_URL=your_postgres_connection_string
 
 ---
 
-**마지막 업데이트**: 2025-12-16 18:47 KST
-**버전**: v0.0.3 (Kakao Login 완료)
+**마지막 업데이트**: 2025-12-20 17:20 KST
+**버전**: v0.0.5 (백엔드 프로젝트 셋업 완료)
 **작성자**: SK-Jack with tigger.kim
 
-**최근 변경사항** (v0.0.3):
+**최근 변경사항** (v0.0.5):
+- ✅ 백엔드 프로젝트 생성: Kotlin + Spring Boot 4.0.1 + Kotlin 2.2.0
+- ✅ 엔티티 생성: User, Restaurant, Review (JPA)
+- ✅ Repository 인터페이스 생성 (Spring Data JPA)
+- ✅ REST API Controller 생성 (User, Restaurant, Review)
+- ✅ Gradle 8.14 + Gradle Wrapper 설정
+- ✅ 빌드 성공 확인
+- 🔥 **다음**: MySQL 연동 테스트 & Kakao Map 통합
+
+**이전 변경사항** (v0.0.4):
+- ✅ 백엔드 기술 스택 변경: Kotlin + Spring Boot 4.x + MySQL 8.x
+- ✅ DB 스키마를 MySQL 문법으로 업데이트
+
+**이전 변경사항** (v0.0.3):
 - ✅ Kakao Login 통합 완료 (SDK, UI, 환경변수)
 - ✅ 사용자 프로필 표시 (닉네임, 프로필 이미지)
 - ✅ 로그인/로그아웃 기능 구현
-- 🔥 **다음**: Kakao Map 통합 (지도 UI + 음식점 마커)

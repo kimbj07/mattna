@@ -1,0 +1,47 @@
+# ==============================
+# Frontend (React + Vite)
+# ==============================
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+
+# ==============================
+# Backend (Kotlin + Spring Boot)
+# ==============================
+backend/build/
+backend/.gradle/
+backend/out/
+backend/*.jar
+backend/*.war
+
+# Spring Boot
+backend/src/main/resources/application-local.yml
+backend/src/main/resources/application-secret.yml
+
+# ==============================
+# IDE
+# ==============================
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# ==============================
+# Logs
+# ==============================
+*.log
+logs/
+
+# ==============================
+# Sensitive Files (NEVER COMMIT)
+# ==============================
+*.pem
+*.key
+*secret*
+*credential*
+.env*
+!.env.example
